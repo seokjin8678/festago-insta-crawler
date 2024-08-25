@@ -8,6 +8,7 @@ database = SqliteDatabase('local_database.db')
 class BaseModel(Model):
   class Meta:
     database = database
+    legacy_table_names = False
 
 
 class InstagramAccount(BaseModel):

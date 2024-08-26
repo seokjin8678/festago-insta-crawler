@@ -1,5 +1,6 @@
 import time
 import logging
+from datetime import datetime
 from time import sleep
 from selenium import webdriver
 from selenium.common import NoSuchElementException
@@ -35,46 +36,62 @@ def login(username: str, password: str):
 
 
 def crawling(insta_account):
-  maximum_over_read_count = 3  # 고정된 게시글 때문에 3번 까지는 읽은 게시글이라도 계속 읽는다.
-  over_read_count = 0
+  pinned_post_offset_count = 3  # 고정된 게시글 때문에 3번 까지는 읽은 게시글이라도 계속 읽는다.
   account_id = insta_account.id
-  read_post_ids = set(
-      map(lambda history: history.post_id, insta_account.histories.select())
-  )
   logger.info(f'{account_id} 계정 크롤링 시작')
 
   move_to_first_post(account_id)
 
-  festival_posts = []
-  while over_read_count <= maximum_over_read_count:
-    post_id = extract_post_id(driver.current_url)
+  unread_posts = []
+  for i in range(pinned_post_offset_count):
+    post_id = extract_post_id()
     logger.info(f'게시글 조회 완료 post_id = {post_id}')
-    if post_id in read_post_ids:
-      over_read_count += 1
-    else:
-      if is_post_festival_post():
-        logger.info(
-            f'{account_id} 계정에 축제에 관련된 키워드가 포함된 게시글이 등록되었습니다. post_id = {post_id}'
-        )
-        festival_posts.append(driver.current_url)
-        InstagramReadHistory.create(
-            post_id=post_id,
-            account_id=account_id,
-            is_festival=True,
-        )
-      else:
-        InstagramReadHistory.create(
-            post_id=post_id,
-            account_id=account_id,
-            is_festival=False,
-        )
+    post = (InstagramReadHistory.select()
+            .where(InstagramReadHistory.post_id == post_id)
+            .get_or_none())
+    if post is None:
+      unread_posts.append({
+        'post_id': post_id,
+        'account_id': account_id,
+        'is_festival': is_post_festival_post(),
+        'posted_at': extract_posted_at()
+      })
     move_to_next_post()
 
-  if festival_posts:
-    festival_posts_body = ".\n".join(festival_posts)
+  read_post_ids = set(
+      map(
+          lambda history: history.post_id,
+          insta_account.histories
+          .select()
+          .order_by(InstagramReadHistory.posted_at.desc())
+          .limit(30)
+      )
+  )
+
+  while True:
+    post_id = extract_post_id()
+    logger.info(f'게시글 조회 완료 post_id = {post_id}')
+    if post_id in read_post_ids:
+      break
+
+    unread_posts.append({
+      'post_id': post_id,
+      'account_id': account_id,
+      'is_festival': is_post_festival_post(),
+      'posted_at': extract_posted_at()
+    })
+    move_to_next_post()
+
+  if unread_posts:
+    InstagramReadHistory.insert_many(unread_posts).execute()
+    festival_posts_body = "\n".join(
+        map(
+            lambda it: f'https://www.instagram.com/p/{it['post_id']}',
+            unread_posts
+        ))
     message = (
       f"https://www.instagram.com/{account_id}\n"
-      f"{insta_account.name} 계정에 {len(festival_posts)}개의 축제 게시글이 조회되었습니다.\n"
+      f"{insta_account.name} 계정에 {len(unread_posts)}개의 축제 게시글이 조회되었습니다.\n"
       f"{festival_posts_body}"
     )
     discord_client.send(message)
@@ -92,7 +109,8 @@ def move_to_first_post(account_id: str):
   driver.implicitly_wait(1)
 
 
-def extract_post_id(post_url: str) -> str:
+def extract_post_id() -> str:
+  post_url = driver.current_url
   start_index = post_url.find('/p/') + 3
   end_index = post_url.find('/', start_index)
   return post_url[start_index:end_index]
@@ -107,6 +125,12 @@ def is_post_festival_post() -> bool:
     if filtering_word in post_text:
       return True
   return False
+
+
+def extract_posted_at() -> datetime:
+  datetime_element = driver.find_element(by=By.CSS_SELECTOR, value='.x1p4m5qa')
+  date_str = datetime_element.get_attribute("datetime")
+  return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
 
 
 def move_to_next_post():
@@ -135,18 +159,19 @@ def initial_history(insta_account):
 
   move_to_first_post(account_id)
 
-  post_ids = []
-  while limit_count < read_count:
-    post_ids.append(extract_post_id(driver.current_url))
+  unread_posts = []
+  while read_count < limit_count:
+    unread_posts.append({
+      'post_id': extract_post_id(),
+      'account_id': account_id,
+      'is_festival': is_post_festival_post(),
+      'posted_at': extract_posted_at()
+    })
     try:
       move_to_next_post()
       read_count += 1
     except NoSuchElementException:
       break
 
-  post_histories = tuple(
-      map(lambda post_id: {'post_id': post_id, 'account_id': account_id},
-          post_ids)
-  )
-  InstagramReadHistory.insert_many(post_histories).execute()
-  logger.info(f'{account_id} 계정에 {len(post_ids)}개의 읽은 게시글 기록을 저장했습니다.')
+  InstagramReadHistory.insert_many(unread_posts).execute()
+  logger.info(f'{account_id} 계정에 {len(unread_posts)}개의 읽은 게시글 기록을 저장했습니다.')

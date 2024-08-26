@@ -21,4 +21,8 @@ class InstagramReadHistory(BaseModel):
   post_id = CharField()
   account_id = ForeignKeyField(InstagramAccount, backref='histories')
   is_festival = BooleanField(null=True)
+  posted_at = DateTimeField()
   created_at = DateTimeField(default=datetime.datetime.now)
+
+InstagramReadHistory.add_index(InstagramReadHistory.post_id)
+InstagramReadHistory.add_index(InstagramReadHistory.posted_at.desc())

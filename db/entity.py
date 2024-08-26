@@ -24,5 +24,6 @@ class InstagramReadHistory(BaseModel):
   posted_at = DateTimeField()
   created_at = DateTimeField(default=datetime.datetime.now)
 
+
 InstagramReadHistory.add_index(InstagramReadHistory.post_id)
 InstagramReadHistory.add_index(InstagramReadHistory.posted_at.desc())

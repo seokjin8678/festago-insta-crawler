@@ -100,7 +100,10 @@ def extract_post_id(post_url: str) -> str:
 
 
 def is_post_festival_post() -> bool:
-  post_text = driver.find_element(by=By.TAG_NAME, value='h1').text
+  try:
+    post_text = driver.find_element(by=By.TAG_NAME, value='h1').text
+  except NoSuchElementException:
+    return False
   for filtering_word in filtering_words:
     if filtering_word in post_text:
       return True

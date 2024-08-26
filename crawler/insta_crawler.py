@@ -136,9 +136,7 @@ def initial_history(insta_account):
   move_to_first_post(account_id)
 
   post_ids = []
-  while True:
-    if read_count >= limit_count:
-      break
+  while limit_count < read_count:
     post_ids.append(extract_post_id(driver.current_url))
     try:
       move_to_next_post()

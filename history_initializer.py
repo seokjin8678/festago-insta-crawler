@@ -1,10 +1,12 @@
+import datetime
+
 from crawler import insta_crawler
 from db.entity import database, InstagramAccount, InstagramReadHistory
 import argparse
 import logging
 
 logging.basicConfig(
-    filename="log.log",
+    filename=f"logs/{datetime.datetime.now().date()}.log",
     format='%(asctime)s %(levelname)s:%(message)s',
     datefmt='%m/%d/%Y %I:%M:%S %p',
     level=logging.INFO

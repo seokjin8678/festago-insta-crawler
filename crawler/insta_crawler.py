@@ -46,8 +46,9 @@ def crawling(insta_account):
   move_to_first_post(account_id)
 
   festival_posts = []
-  post_id = extract_post_id(driver.current_url)
   while over_read_count <= maximum_over_read_count:
+    post_id = extract_post_id(driver.current_url)
+    logger.info(f'게시글 조회 완료 post_id = {post_id}')
     if post_id in read_post_ids:
       over_read_count += 1
     else:
@@ -68,8 +69,6 @@ def crawling(insta_account):
             is_festival=False,
         )
     move_to_next_post()
-    post_id = extract_post_id(driver.current_url)
-    logger.info(f'게시글 조회 완료 post_id = {post_id}')
 
   if festival_posts:
     festival_posts_body = ".\n".join(festival_posts)

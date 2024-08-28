@@ -84,12 +84,12 @@ def crawling(insta_account):
 
   if unread_posts:
     InstagramReadHistory.insert_many(unread_posts).execute()
-    festival_posts = set(filter(lambda it: it['is_festival'], unread_posts))
+    festival_posts = list(filter(lambda it: it['is_festival'], unread_posts))
     if festival_posts:
       festival_post_urls = "\n".join(map(lambda it: f'https://www.instagram.com/p/{it['post_id']}', festival_posts))
       message = (
         f"https://www.instagram.com/{account_id}\n"
-        f"{insta_account.name} 계정에 {len(unread_posts)}개의 축제 게시글이 조회되었습니다.\n"
+        f"{insta_account.name} 계정에 {len(festival_posts)}개의 축제 게시글이 조회되었습니다.\n"
         f"{festival_post_urls}"
       )
       discord_client.send(message)

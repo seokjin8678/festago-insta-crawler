@@ -1,11 +1,13 @@
-import time
 import logging
+import time
 from datetime import datetime
 from time import sleep
+
 from selenium import webdriver
 from selenium.common import NoSuchElementException
 from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
+
 from api import discord_client
 from crawler.filtering_words import filtering_words
 from db.entity import InstagramReadHistory
@@ -16,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 def login(username: str, password: str):
   driver.get('https://www.instagram.com')
-
   driver.implicitly_wait(2)
+
   username_input = driver.find_element(
       by=By.CSS_SELECTOR,
       value='input[name="username"]'

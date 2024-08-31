@@ -36,14 +36,13 @@ def login(username: str, password: str):
 
 
 def crawling(insta_account):
-  pinned_post_offset_count = 3  # 고정된 게시글 때문에 3번 까지는 읽은 게시글이라도 계속 읽는다.
   account_id = insta_account.id
   logger.info(f'{account_id} 계정 크롤링 시작')
 
   move_to_first_post(account_id)
 
   unread_posts = []
-  for i in range(pinned_post_offset_count):
+  for _ in range(get_pinned_post_count()):
     post_id = extract_post_id()
     logger.info(f'게시글 조회 완료 post_id = {post_id}')
     post = (InstagramReadHistory.select()
@@ -105,6 +104,12 @@ def move_to_first_post(account_id: str):
     raise Exception(f'{account_id} 계정에 게시글이 존재하지 않습니다.')
   first_post.click()
   driver.implicitly_wait(1)
+
+
+def get_pinned_post_count():
+  svgs = driver.find_elements(by=By.TAG_NAME, value='svg')
+  pinned_post_offset_count = len(list(filter(lambda svg: svg.get_attribute('aria-label') == '고정 게시물', svgs)))
+  return pinned_post_offset_count
 
 
 def extract_post_id() -> str:

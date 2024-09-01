@@ -82,3 +82,11 @@ def extract_posted_at() -> datetime:
   datetime_element = driver.find_element(by=By.CSS_SELECTOR, value='.x1p4m5qa')
   date_str = datetime_element.get_attribute("datetime")
   return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+
+
+def get_image_url(post_url):
+  driver.get(post_url)
+  driver.implicitly_wait(5)
+  return (driver.find_element(by=By.CSS_SELECTOR, value='._aagu')
+          .find_element(by=By.TAG_NAME, value='img')
+          .get_attribute('src'))

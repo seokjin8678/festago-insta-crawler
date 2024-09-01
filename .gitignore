@@ -1,3 +1,4 @@
 .idea
 local_database.db
 *.log
+/images/*.jpg

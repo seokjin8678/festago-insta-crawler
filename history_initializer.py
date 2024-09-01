@@ -1,9 +1,9 @@
-import datetime
-
-from crawler import insta_crawler
-from db.entity import database, InstagramAccount, InstagramReadHistory
 import argparse
+import datetime
 import logging
+
+from crawler import crawler
+from db.entity import database, InstagramAccount, InstagramReadHistory
 
 logging.basicConfig(
     filename=f"logs/{datetime.datetime.now().date()}.log",
@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 def main(username: str, password: str):
-  insta_crawler.login(username, password)
+  crawler.login(username, password)
+
   database.create_tables([InstagramAccount, InstagramReadHistory])
 
   accounts = InstagramAccount.select()
@@ -23,7 +24,36 @@ def main(username: str, password: str):
   for account in accounts:
     try:
       with database.atomic():
-        insta_crawler.initial_history(account)
+        limit_count = 30
+        read_count = 0
+        account_id = account.id
+        logger.info(f'{account_id} 계정 읽은 게시글 기록 초기화 시작')
+        if len(account.histories) >= limit_count:
+          logger.info(f'{account_id} 계정에 이미 읽은 게시글이 존재합니다.')
+          return
+        (InstagramReadHistory
+         .delete()
+         .where(InstagramReadHistory.account_id == account_id)
+         .execute())
+
+        crawler.move_to_first_post(account_id)
+
+        unread_posts = []
+        while read_count < limit_count:
+          unread_posts.append({
+            'post_id': crawler.extract_post_id(),
+            'account_id': account_id,
+            'is_festival': crawler.is_festival_post(),
+            'posted_at': crawler.extract_posted_at()
+          })
+          try:
+            crawler.move_to_next_post()
+            read_count += 1
+          except Exception:
+            break
+
+        InstagramReadHistory.insert_many(unread_posts).execute()
+        logger.info(f'{account_id} 계정에 {len(unread_posts)}개의 읽은 게시글 기록을 저장했습니다.')
     except Exception as e:
       logger.error(e)
   logger.info(f'{len(accounts)}개의 계정에 대해 읽은 게시글 기록 초기화를 완료했습니다.')

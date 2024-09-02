@@ -82,6 +82,11 @@ def main(username: str, password: str, webhook_url: str):
               f"{festival_post_urls}"
             )
             discord_client.send(message)
+        else:
+          if (datetime.datetime.now() - crawler.extract_posted_at()) >= datetime.timedelta(days=30):
+            message = f'[{account.name}](https://www.instagram.com/{account_id}) 계정에 30일 이상 새로운 게시글이 업로드 되지 않았습니다.'
+            discord_client.send(message)
+
         logger.info(f'{account_id} 계정 크롤링 완료')
     except Exception as e:
       logger.error(e)

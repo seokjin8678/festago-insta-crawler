@@ -14,6 +14,7 @@ class BaseModel(Model):
 class InstagramAccount(BaseModel):
   id = CharField(primary_key=True)
   name = CharField(null=True)
+  enabled = BooleanField(default=True)
 
 
 class InstagramReadHistory(BaseModel):

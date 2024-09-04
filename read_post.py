@@ -21,7 +21,7 @@ def main(username: str, password: str, webhook_url: str):
 
   crawler.login(username, password)
 
-  accounts = InstagramAccount.select()
+  accounts = InstagramAccount.select().where(InstagramAccount.enabled == True)
   logger.info(f'{len(accounts)}개의 계정에 대해 크롤링을 시작합니다.')
   for account in accounts:
     try:

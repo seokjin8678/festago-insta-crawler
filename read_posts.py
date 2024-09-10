@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 
 def main(username: str, password: str, webhook_url: str):
-  database.create_tables([InstagramAccount, InstagramReadHistory])
   discord_client.initial_webhook(webhook_url)
 
   crawler.login(username, password)

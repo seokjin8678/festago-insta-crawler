@@ -17,8 +17,6 @@ logger = logging.getLogger(__name__)
 def main(username: str, password: str):
   crawler.login(username, password)
 
-  database.create_tables([InstagramAccount, InstagramReadHistory])
-
   accounts = InstagramAccount.select().where(InstagramAccount.enabled == True)
   logger.info(f'{len(accounts)}개의 계정에 대해 읽은 게시글 기록 초기화를 시작합니다.')
   for account in accounts:
